@@ -1,0 +1,9 @@
+<Solution>
+  <Project Path="ControlAgentNet.Features.Heartbeat.csproj" />
+  <Folder Name="/tests/">
+    <Project Path="tests/ControlAgentNet.Features.Heartbeat.Tests/ControlAgentNet.Features.Heartbeat.Tests.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/HeartbeatDemo/HeartbeatDemo.csproj" />
+  </Folder>
+</Solution>
