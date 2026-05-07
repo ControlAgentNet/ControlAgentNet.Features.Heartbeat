@@ -25,8 +25,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\ControlAgentNet.Features.Heartbeat.csproj" />
-    <ProjectReference Include="..\..\..\ControlAgentNet.Features.CronJobs\ControlAgentNet.Features.CronJobs.csproj" />
-    <ProjectReference Include="..\..\..\ControlAgentNet.Agents\src\ControlAgentNet.Agents\ControlAgentNet.Agents.csproj" />
+    <PackageReference Include="ControlAgentNet.Features.CronJobs" Version="0.1.6" />
+    <PackageReference Include="ControlAgentNet.Tools.Greeting" Version="0.1.1" />
   </ItemGroup>
 
 </Project>

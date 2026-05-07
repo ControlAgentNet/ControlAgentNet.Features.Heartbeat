@@ -1,0 +1,83 @@
+name: Build and Pack
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Read base version
+        id: base_version
+        shell: bash
+        run: |
+          BASE_VERSION=$(python - <<'PY'
+          import re
+          from pathlib import Path
+          text = Path('Directory.Build.props').read_text()
+          match = re.search(r'<VersionPrefix>([^<]+)</VersionPrefix>', text)
+          if not match:
+              raise SystemExit('VersionPrefix not found in Directory.Build.props')
+          print(match.group(1))
+          PY
+          )
+          echo "base_version=${BASE_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Compute package version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" == v* ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          elif [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            VERSION="${{ steps.base_version.outputs.base_version }}-preview.${GITHUB_RUN_NUMBER}"
+          else
+            VERSION="${{ steps.base_version.outputs.base_version }}-alpha.${GITHUB_RUN_NUMBER}"
+          fi
+          echo "package_version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Validate release tag matches VersionPrefix
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          BASE_VERSION="${{ steps.base_version.outputs.base_version }}"
+
+          if [[ "$TAG_VERSION" != "$BASE_VERSION" ]]; then
+            echo "Release tag version ($TAG_VERSION) does not match VersionPrefix ($BASE_VERSION)."
+            exit 1
+          fi
+
+      - name: Restore
+        run: |
+          dotnet restore ControlAgentNet.Features.Heartbeat.csproj
+          dotnet restore tests/ControlAgentNet.Features.Heartbeat.Tests/ControlAgentNet.Features.Heartbeat.Tests.csproj
+
+      - name: Build
+        run: |
+          dotnet build ControlAgentNet.Features.Heartbeat.csproj --no-restore -c Release /p:Version=${{ steps.version.outputs.package_version }}
+          dotnet build tests/ControlAgentNet.Features.Heartbeat.Tests/ControlAgentNet.Features.Heartbeat.Tests.csproj --no-restore -c Release
+
+      - name: Test
+        run: dotnet test tests/ControlAgentNet.Features.Heartbeat.Tests/ControlAgentNet.Features.Heartbeat.Tests.csproj --no-build -c Release --collect:"XPlat Code Coverage"
+
+      - name: Pack
+        run: dotnet pack ControlAgentNet.Features.Heartbeat.csproj --no-build -c Release -o artifacts/nuget /p:Version=${{ steps.version.outputs.package_version }}
+
+      - name: Upload NuGet artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages-${{ steps.version.outputs.package_version }}
+          path: |
+            artifacts/nuget/*.nupkg
+            artifacts/nuget/*.snupkg

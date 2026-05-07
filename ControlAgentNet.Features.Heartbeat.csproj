@@ -9,16 +9,24 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ControlAgentNet.Agents\src\ControlAgentNet.Core\ControlAgentNet.Core.csproj" />
-    <ProjectReference Include="..\ControlAgentNet.Features.CronJobs\ControlAgentNet.Features.CronJobs.csproj" />
-    <ProjectReference Include="..\ControlAgentNet.Agents\src\ControlAgentNet.Runtime\ControlAgentNet.Runtime.csproj" />
-    <ProjectReference Include="..\ControlAgentNet.Policies\ControlAgentNet.Policies.csproj" />
+    <PackageReference Include="ControlAgentNet.Core" Version="0.1.10" />
+    <PackageReference Include="ControlAgentNet.Runtime" Version="0.1.10" />
+    <PackageReference Include="Cronos" Version="0.11.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.5" />
+    <PackageReference Include="ControlAgentNet.Features.CronJobs" Version="0.1.6" />
+    <PackageReference Include="ControlAgentNet.Policies" Version="0.1.2" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.5" />
   </ItemGroup>
 
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+  
   <ItemGroup>
     <Compile Remove="samples\**" />
     <None Remove="samples\**" />
@@ -27,3 +35,4 @@
   </ItemGroup>
 
 </Project>
+

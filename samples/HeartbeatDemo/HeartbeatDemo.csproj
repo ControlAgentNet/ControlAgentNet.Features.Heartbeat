@@ -9,8 +9,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\ControlAgentNet.Features.Heartbeat.csproj" />
-    <ProjectReference Include="..\..\..\ControlAgentNet.Agents\src\ControlAgentNet.Agents\ControlAgentNet.Agents.csproj" />
-    <ProjectReference Include="..\..\..\ControlAgentNet.Tools.Greeting\src\ControlAgentNet.Tools.Greeting\ControlAgentNet.Tools.Greeting.csproj" />
+    <PackageReference Include="ControlAgentNet.Tools.Greeting" Version="0.1.1" />
+
   </ItemGroup>
 
 </Project>

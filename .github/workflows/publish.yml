@@ -1,0 +1,68 @@
+name: Publish NuGet Package
+
+on:
+  push:
+    tags: [ 'v*' ]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Read base version
+        id: base_version
+        shell: bash
+        run: |
+          BASE_VERSION=$(python - <<'PY'
+          import re
+          from pathlib import Path
+          text = Path('Directory.Build.props').read_text()
+          match = re.search(r'<VersionPrefix>([^<]+)</VersionPrefix>', text)
+          if not match:
+              raise SystemExit('VersionPrefix not found in Directory.Build.props')
+          print(match.group(1))
+          PY
+          )
+          echo "base_version=${BASE_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Validate release tag matches VersionPrefix
+        shell: bash
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          BASE_VERSION="${{ steps.base_version.outputs.base_version }}"
+
+          if [[ "$TAG_VERSION" != "$BASE_VERSION" ]]; then
+            echo "Release tag version ($TAG_VERSION) does not match VersionPrefix ($BASE_VERSION)."
+            exit 1
+          fi
+
+      - name: Restore
+        run: |
+          dotnet restore ControlAgentNet.Features.Heartbeat.csproj
+          dotnet restore tests/ControlAgentNet.Features.Heartbeat.Tests/ControlAgentNet.Features.Heartbeat.Tests.csproj
+
+      - name: Build
+        run: |
+          dotnet build ControlAgentNet.Features.Heartbeat.csproj --no-restore -c Release /p:Version=${GITHUB_REF_NAME#v}
+          dotnet build tests/ControlAgentNet.Features.Heartbeat.Tests/ControlAgentNet.Features.Heartbeat.Tests.csproj --no-restore -c Release
+
+      - name: Test
+        run: dotnet test tests/ControlAgentNet.Features.Heartbeat.Tests/ControlAgentNet.Features.Heartbeat.Tests.csproj --no-build -c Release --collect:"XPlat Code Coverage"
+
+      - name: Pack
+        run: dotnet pack ControlAgentNet.Features.Heartbeat.csproj --no-build -c Release -o artifacts/nuget /p:Version=${GITHUB_REF_NAME#v}
+
+      - name: Push NuGet packages
+        shell: bash
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          dotnet nuget push "artifacts/nuget/*.nupkg" --source "https://api.nuget.org/v3/index.json" --api-key "$NUGET_API_KEY" --skip-duplicate
+          dotnet nuget push "artifacts/nuget/*.snupkg" --source "https://api.nuget.org/v3/index.json" --api-key "$NUGET_API_KEY" --skip-duplicate
